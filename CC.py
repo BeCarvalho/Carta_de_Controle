@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import io
 
 
 # Função para calcular limites da carta de controle
@@ -14,10 +15,10 @@ def calcular_limites(dados):
     return media, limite_superior, limite_inferior
 
 
-# Função para gerar e salvar o gráfico em PDF
-def salvar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
-    # Criar um PDF com o gráfico e a tabela
-    with PdfPages(f'{nome_analise}.pdf') as pdf:
+# Função para gerar o PDF em memória
+def gerar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
+    buffer = io.BytesIO()
+    with PdfPages(buffer) as pdf:
         plt.figure(figsize=(10, 6))
         plt.plot(dados['Data'], dados['Valor'], marker='o', linestyle='-', color='blue', label='Valores')
         plt.axhline(y=media, color='green', linestyle='--', label='Média')
@@ -45,12 +46,15 @@ def salvar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
         pdf.savefig()
         plt.close()
 
+    buffer.seek(0)  # Voltar ao início do buffer
+    return buffer
+
 
 # Interface do Streamlit
 st.title("Análise de Controle Laboratorial")
 
 # Seleção do tipo de análise
-tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Colimetria (Quantitativa)", "Esporos de Bactérias Aeróbias - EBA"])
+tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Análise A", "Análise B", "Análise C"])
 
 # Upload dos dados
 uploaded_file = st.file_uploader("Escolha um arquivo CSV", type="csv")
@@ -91,10 +95,15 @@ if uploaded_file is not None:
 
         st.pyplot(plt)
 
-        # Botão para download do PDF
-        if st.button("Baixar PDF com Gráfico e Tabela"):
-            salvar_pdf(tipo_analise, dados, media, limite_superior, limite_inferior)
-            st.success(f"PDF '{tipo_analise}.pdf' gerado com sucesso!")
+        # Gerar PDF em memória e criar botão para download
+        pdf_buffer = gerar_pdf(tipo_analise, dados, media, limite_superior, limite_inferior)
+
+        st.download_button(
+            label="Baixar PDF com Gráfico e Tabela",
+            data=pdf_buffer,
+            file_name=f"{tipo_analise}.pdf",
+            mime="application/pdf"
+        )
 
     except KeyError as e:
         st.error(
