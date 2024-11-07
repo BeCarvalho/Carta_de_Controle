@@ -54,7 +54,7 @@ def gerar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
 st.title("Análise de Controle Laboratorial")
 
 # Seleção do tipo de análise
-tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Esporps de Bactérias Aeróbias - EBA", "Colimetria - Quantitativa"])
+tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Esporos de Bactérias Aeróbias - EBA", "Colimetria - Quantitativa"])
 
 # Upload dos dados
 uploaded_file = st.file_uploader("Escolha um arquivo CSV", type="csv")
