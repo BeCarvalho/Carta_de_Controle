@@ -51,7 +51,7 @@ def gerar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
 
 
 # Interface do Streamlit
-st.title("Análise de Controle Laboratorial")
+st.title("Carta de Controle - Microbiologia CAAN")
 
 # Seleção do tipo de análise
 tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Esporos de Bactérias Aeróbias - EBA", "Colimetria - Quantitativa"])
