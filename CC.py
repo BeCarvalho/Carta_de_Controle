@@ -51,60 +51,67 @@ def gerar_pdf(nome_analise, dados, media, limite_superior, limite_inferior):
 
 
 # Interface do Streamlit
-st.title("Carta de Controle - Microbiologia CAAN")
+st.title("Carta de Controle - CAAN")
 
-# Seleção do tipo de análise
-tipo_analise = st.selectbox("Selecione o tipo de análise:", ["Esporos de Bactérias Aeróbias - EBA", "Colimetria - Quantitativa"])
+# Campo para digitar o nome da análise
+tipo_analise = st.text_input("Digite o nome da análise:")
 
-# Upload dos dados
-uploaded_file = st.file_uploader("Escolha um arquivo CSV", type="csv")
+# Área para colar os dados
+st.subheader("Cole os dados abaixo")
+st.write("Cole os dados da coluna 'Data Coleta' e 'Valor' separados por tabulação:")
+data_input = st.text_area("Dados (Formato: Data Coleta\tValor)", height=300)
 
-if uploaded_file is not None:
-    # Carregar os dados e exibir as colunas
-    try:
-        dados = pd.read_csv(uploaded_file, delimiter=",", decimal=",")
+if st.button("Gerar Gráfico e PDF"):
+    if data_input:
+        try:
+            # Processar os dados colados pelo usuário
+            data_lines = data_input.strip().split('\n')[1:]  # Ignorar o cabeçalho
+            data_records = [line.split('\t') for line in data_lines]  # Separar por tabulação
 
-        # Certifique-se de que as colunas estão no formato correto
-        dados['Data'] = pd.to_datetime(dados['Data'], format="%d/%m/%Y")
-        dados['Valor'] = pd.to_numeric(dados['Valor'], errors='coerce')
+            # Criar DataFrame a partir dos dados processados
+            dados = pd.DataFrame(data_records, columns=['Data', 'Valor'])
+            dados['Data'] = pd.to_datetime(dados['Data'], format="%d/%m/%Y", errors='coerce')
+            dados['Valor'] = pd.to_numeric(dados['Valor'].str.replace(',', '.'),
+                                           errors='coerce')  # Trocar vírgula por ponto
 
-        # Exibir os dados carregados
-        st.subheader("Dados Carregados")
-        st.write(dados)
+            # Exibir os dados carregados
+            st.subheader("Dados Carregados")
+            st.write(dados)
 
-        # Calcular limites
-        media, limite_superior, limite_inferior = calcular_limites(dados)
+            # Calcular limites
+            media, limite_superior, limite_inferior = calcular_limites(dados)
 
-        # Exibir a média e os limites de controle
-        st.subheader("Métricas da Carta de Controle")
-        st.write(f"Média: {media:.2f}")
-        st.write(f"Limite Superior de Controle (LSC): {limite_superior:.2f}")
-        st.write(f"Limite Inferior de Controle (LIC): {limite_inferior:.2f}")
+            # Exibir a média e os limites de controle
+            st.subheader("Métricas da Carta de Controle")
+            st.write(f"Média: {media:.2f}")
+            st.write(f"Limite Superior de Controle (LSC): {limite_superior:.2f}")
+            st.write(f"Limite Inferior de Controle (LIC): {limite_inferior:.2f}")
 
-        # Plotar a carta de controle
-        plt.figure(figsize=(10, 6))
-        plt.plot(dados['Data'], dados['Valor'], marker='o', linestyle='-', color='blue', label='Valores')
-        plt.axhline(y=media, color='green', linestyle='--', label='Média')
-        plt.axhline(y=limite_superior, color='red', linestyle='--', label='LSC (Limite Superior)')
-        plt.axhline(y=limite_inferior, color='orange', linestyle='--', label='LIC (Limite Inferior)')
-        plt.xticks(rotation=45)
-        plt.xlabel("Data Coleta")
-        plt.ylabel("Valor")
-        plt.title(f"Carta de Controle - {tipo_analise}")
-        plt.legend()
+            # Plotar a carta de controle
+            plt.figure(figsize=(10, 6))
+            plt.plot(dados['Data'], dados['Valor'], marker='o', linestyle='-', color='blue', label='Valores')
+            plt.axhline(y=media, color='green', linestyle='--', label='Média')
+            plt.axhline(y=limite_superior, color='red', linestyle='--', label='LSC (Limite Superior)')
+            plt.axhline(y=limite_inferior, color='orange', linestyle='--', label='LIC (Limite Inferior)')
+            plt.xticks(rotation=45)
+            plt.xlabel("Data Coleta")
+            plt.ylabel("Valor")
+            plt.title(f"Carta de Controle - {tipo_analise}")
+            plt.legend()
 
-        st.pyplot(plt)
+            st.pyplot(plt)
 
-        # Gerar PDF em memória e criar botão para download
-        pdf_buffer = gerar_pdf(tipo_analise, dados, media, limite_superior, limite_inferior)
+            # Gerar PDF em memória e criar botão para download
+            pdf_buffer = gerar_pdf(tipo_analise, dados, media, limite_superior, limite_inferior)
 
-        st.download_button(
-            label="Baixar PDF com Gráfico e Tabela",
-            data=pdf_buffer,
-            file_name=f"{tipo_analise}.pdf",
-            mime="application/pdf"
-        )
+            st.download_button(
+                label="Baixar PDF com Gráfico e Tabela",
+                data=pdf_buffer,
+                file_name=f"{tipo_analise}.pdf",
+                mime="application/pdf"
+            )
 
-    except KeyError as e:
-        st.error(
-            f"Erro: Coluna {e} não encontrada. Verifique se o arquivo CSV contém as colunas corretas ('Data' e 'Valor').")
+        except Exception as e:
+            st.error(f"Erro ao processar os dados: {e}")
+    else:
+        st.error("Por favor, cole os dados antes de clicar no botão.")
